@@ -551,6 +551,7 @@ public abstract class AbstractApplicationContext extends DefaultResourceLoader
 			logger.info("Refreshing " + this);
 		}
 
+		// 默认什么都没有做
 		// Initialize any placeholder property sources in the context environment
 		initPropertySources();
 

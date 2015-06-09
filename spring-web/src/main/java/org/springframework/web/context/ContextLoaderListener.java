@@ -20,6 +20,10 @@ import javax.servlet.ServletContextEvent;
 import javax.servlet.ServletContextListener;
 
 /**
+ * 启动监听类(入口类): 来启动和关闭spring的根(WebApplicationContext)
+ * 如果使用log4j,应该先注册org.springframework.web.util.Log4jConfigListener日志监听器,然后再注册本监听器
+ *
+ *
  * Bootstrap listener to start up and shut down Spring's root {@link WebApplicationContext}.
  * Simply delegates to {@link ContextLoader} as well as to {@link ContextCleanupListener}.
  *
@@ -100,6 +104,7 @@ public class ContextLoaderListener extends ContextLoader implements ServletConte
 
 
 	/**
+	 * 初始化
 	 * Initialize the root web application context.
 	 */
 	@Override

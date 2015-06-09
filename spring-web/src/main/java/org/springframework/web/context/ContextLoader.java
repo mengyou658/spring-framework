@@ -284,6 +284,7 @@ public class ContextLoader {
 
 
 	/**
+     * 在ServletContext中注册web application context
 	 * Initialize Spring's web application context for the given servlet context,
 	 * using the application context provided at construction time, or creating a new one
 	 * according to the "{@link #CONTEXT_CLASS_PARAM contextClass}" and
@@ -295,6 +296,7 @@ public class ContextLoader {
 	 * @see #CONFIG_LOCATION_PARAM
 	 */
 	public WebApplicationContext initWebApplicationContext(ServletContext servletContext) {
+		// 判断,防止重复注册
 		if (servletContext.getAttribute(WebApplicationContext.ROOT_WEB_APPLICATION_CONTEXT_ATTRIBUTE) != null) {
 			throw new IllegalStateException(
 					"Cannot initialize context because there is already a root application context present - " +
@@ -309,6 +311,7 @@ public class ContextLoader {
 		long startTime = System.currentTimeMillis();
 
 		try {
+            // 保存本地变量中,以便在ServletContext关闭的时候使用
 			// Store context in local instance variable, to guarantee that
 			// it is available on ServletContext shutdown.
 			if (this.context == null) {
@@ -316,6 +319,7 @@ public class ContextLoader {
 			}
 			if (this.context instanceof ConfigurableWebApplicationContext) {
 				ConfigurableWebApplicationContext cwac = (ConfigurableWebApplicationContext) this.context;
+                // 没有初始化则执行初始化
 				if (!cwac.isActive()) {
 					// The context has not yet been refreshed -> provide services such as
 					// setting the parent context, setting the application context id, etc
@@ -325,6 +329,7 @@ public class ContextLoader {
 						ApplicationContext parent = loadParentContext(servletContext);
 						cwac.setParent(parent);
 					}
+                    // 读取配置,初始化context
 					configureAndRefreshWebApplicationContext(cwac, servletContext);
 				}
 			}
@@ -362,6 +367,9 @@ public class ContextLoader {
 	}
 
 	/**
+     * 初始化WebApplicationContext,可以自定义(继承{@link ConfigurableWebApplicationContext})
+     * 或者使用默认({@link org.springframework.web.context.support.XmlWebApplicationContext})
+     *
 	 * Instantiate the root WebApplicationContext for this loader, either the
 	 * default context class or a custom context class if specified.
 	 * <p>This implementation expects custom contexts to implement the
@@ -383,6 +391,7 @@ public class ContextLoader {
 	}
 
 	/**
+     * 如果定义了init-param: contextClass 则使用,没有定义使用默认的({@link org.springframework.web.context.support.XmlWebApplicationContext})
 	 * Return the WebApplicationContext implementation class to use, either the
 	 * default XmlWebApplicationContext or a custom context class if specified.
 	 * @param servletContext current servlet context
@@ -414,6 +423,7 @@ public class ContextLoader {
 	}
 
 	protected void configureAndRefreshWebApplicationContext(ConfigurableWebApplicationContext wac, ServletContext sc) {
+        // 自定义设置context Id
 		if (ObjectUtils.identityToString(wac).equals(wac.getId())) {
 			// The application context id is still set to its original default value
 			// -> assign a more useful id based on available information
@@ -429,11 +439,13 @@ public class ContextLoader {
 		}
 
 		wac.setServletContext(sc);
+        // 自定义的context.xml配置
 		String configLocationParam = sc.getInitParameter(CONFIG_LOCATION_PARAM);
 		if (configLocationParam != null) {
 			wac.setConfigLocation(configLocationParam);
 		}
 
+        // 这里一般没有配置过
 		// The wac environment's #initPropertySources will be called in any case when the context
 		// is refreshed; do it eagerly here to ensure servlet property sources are in place for
 		// use in any post-processing or initialization that occurs below prior to #refresh
@@ -442,8 +454,11 @@ public class ContextLoader {
 			((ConfigurableWebEnvironment) env).initPropertySources(sc, null);
 		}
 
-		customizeContext(sc, wac);
-		wac.refresh();
+        // 这里一般没有配置过
+        customizeContext(sc, wac);
+
+        // 完成资源文件的加载、配置文件解析、Bean定义的注册、组件的初始化等核心工作
+        wac.refresh();
 	}
 
 	/**
@@ -528,6 +543,11 @@ public class ContextLoader {
 	}
 
 	/**
+     * 这里可以被子类覆盖
+     * 默认加载或者获取一个ApplicationContext的实例,作为根WebApplicationContext的父节点.
+     * 如果返回空,在不设置父类
+     * 设置父类是为了多个根WebApplicationContext可以共享一个ApplicationContext(EJBs基本抛弃了)
+     * 简单的web应用不用担心使用
 	 * Template method with default implementation (which may be overridden by a
 	 * subclass), to load or obtain an ApplicationContext instance which will be
 	 * used as the parent context of the root WebApplicationContext. If the
